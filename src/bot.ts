@@ -22,6 +22,7 @@ export class HyperliquidBot {
   private latestMids: Record<string, string> = {};
   private timer: ReturnType<typeof setInterval> | undefined;
   private midSub: { unsubscribe: () => Promise<void> } | undefined;
+  private tickInFlight: Promise<void> | undefined;
 
   constructor(
     private readonly cfg: AppConfig,
@@ -85,16 +86,19 @@ export class HyperliquidBot {
       this.latestMids = ev.mids as Record<string, string>;
     });
 
+    const tickDeps = {
+      info,
+      exchange,
+      user,
+      assetId,
+      szDecimals,
+      strategy,
+      historyCap,
+    };
+
+    this.launchTick(tickDeps);
     this.timer = setInterval(() => {
-      void this.tick({
-        info,
-        exchange,
-        user,
-        assetId,
-        szDecimals,
-        strategy,
-        historyCap,
-      });
+      this.launchTick(tickDeps);
     }, this.cfg.TICK_INTERVAL_MS);
 
     this.log.info(
@@ -110,10 +114,36 @@ export class HyperliquidBot {
   async stop(): Promise<void> {
     if (this.timer) clearInterval(this.timer);
     this.timer = undefined;
+    if (this.tickInFlight) {
+      await this.tickInFlight;
+    }
     if (this.midSub) {
       await this.midSub.unsubscribe();
       this.midSub = undefined;
     }
+  }
+
+  private launchTick(deps: {
+    info: InfoClient;
+    exchange: ExchangeClient | undefined;
+    user: Address | null;
+    assetId: number;
+    szDecimals: number;
+    strategy: ReturnType<typeof createStrategy>;
+    historyCap: number;
+  }): void {
+    if (this.tickInFlight) {
+      this.log.warn("tick_skipped_previous_cycle_still_running");
+      return;
+    }
+
+    this.tickInFlight = this.tick(deps)
+      .catch((e) => {
+        this.log.error({ err: e }, "tick_failed");
+      })
+      .finally(() => {
+        this.tickInFlight = undefined;
+      });
   }
 
   private async tick(deps: {

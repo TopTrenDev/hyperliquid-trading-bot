@@ -1,15 +1,15 @@
-# Hyperliquid trading bot
+# Hyperliquid Trading Bot 🤖
 
 TypeScript bot for [Hyperliquid](https://hyperliquid.gitbook.io/hyperliquid-docs) perpetuals: live mid prices over WebSocket, periodic account polling, pluggable strategy, risk checks, and optional order submission via [`@nktkas/hyperliquid`](https://www.npmjs.com/package/@nktkas/hyperliquid) and [viem](https://viem.sh/).
 
-Trading is **off by default** (`TRADING_ENABLED=false`). Treat live perps and private keys as high risk.
+Trading is **off by default** (`TRADING_ENABLED=false`). Treat live perps and private keys as high risk. ⚠️
 
 [![Telegram](https://img.shields.io/badge/Telegram-@toptrendev_66-2CA5E0?style=for-the-badge&logo=telegram)](https://t.me/TopTrenDev_66)
 [![Twitter](https://img.shields.io/badge/Twitter-@toptrendev-1DA1F2?style=for-the-badge&logo=x)](https://x.com/intent/follow?screen_name=toptrendev)
 [![Gmail](https://img.shields.io/badge/Gmail-marekdvojak146%40gmail.com-D14836?style=for-the-badge&logo=gmail)](mailto:marekdvojak146@gmail.com)
 
 
-## Setup
+## Setup 🚀
 
 ```bash
 cd hyperliquid-trading-bot
@@ -21,7 +21,7 @@ On Windows, use `copy .env.example .env` instead of `cp`.
 
 Edit `.env`. See [.env.example](.env.example) for every variable and short descriptions.
 
-## Scripts
+## Scripts 🛠️
 
 | Command | Description |
 |--------|-------------|
@@ -30,7 +30,7 @@ Edit `.env`. See [.env.example](.env.example) for every variable and short descr
 | `npm start` | Run compiled output (`node dist/main.js`) |
 | `npm run typecheck` | Typecheck without emitting files |
 
-## Configuration
+## Configuration ⚙️
 
 All settings come from environment variables (loaded with [dotenv](https://github.com/motdotla/dotenv)). Important groups:
 
@@ -40,11 +40,11 @@ All settings come from environment variables (loaded with [dotenv](https://githu
 - **Read-only watch:** optional `HL_USER_ADDRESS` when not trading, to poll positions
 - **Risk:** `MAX_POSITION_USD`, `ORDER_NOTIONAL_USD`, `ORDER_COOLDOWN_MS`, `IOC_SLIPPAGE_BPS`
 - **Strategy:** `STRATEGY` (`noop` \| `dual_ma`) and `DUAL_MA_*` when using `dual_ma`
-- **Loop:** `TICK_INTERVAL_MS`, `LOG_LEVEL`
+- **Loop:** `TICK_INTERVAL_MS`
 
 On startup with trading enabled, the bot sets leverage with `updateLeverage`, using `HL_LEVERAGE` capped by the coin’s maximum from exchange metadata.
 
-## Project layout
+## Project Layout 🗂️
 
 ```
 src/
@@ -62,22 +62,25 @@ src/
     index.ts        # Strategy factory
 ```
 
-## Strategies
+## Strategies 📈
 
 - **`noop`** — Default. Connects and runs the loop but never submits orders.
 - **`dual_ma`** — Example only: long-only signals from fast vs slow average of **mid** samples. Not financial advice; replace with your own logic in `src/strategy/`.
 
-## Operations notes
+### How `dual_ma` Works 🧠
 
-- Run on a stable host with good uptime if you enable live trading; use **testnet** first when experimenting.
-- Never commit `.env` or keys. `.gitignore` already excludes `.env`.
-- Logs are structured (pino). Adjust `LOG_LEVEL` for verbosity.
+The included trading strategy is a simple **long-only dual moving average crossover** built on Hyperliquid mid prices:
 
-## References
+1. The bot collects recent mid-price samples from the WebSocket stream.
+2. It computes a **fast** moving average using the last `DUAL_MA_FAST` samples.
+3. It computes a **slow** moving average using the last `DUAL_MA_SLOW` samples.
+4. If the bot is flat and the fast average rises above the slow average by `DUAL_MA_BAND_BPS`, it submits an IOC buy order sized from `ORDER_NOTIONAL_USD`.
+5. If the bot is already long and the fast average drops below the slow average by the same band, it submits a reduce-only IOC sell order to exit.
 
-- [Hyperliquid API docs](https://hyperliquid.gitbook.io/hyperliquid-docs/for-developers/api)
-- [@nktkas/hyperliquid SDK docs](https://nktkas.gitbook.io/hyperliquid)
+Notes:
 
-## Disclaimer
+- The strategy is **long-only**. It does not open short positions.
+- It uses **mid prices**, not candle closes or external indicators.
+- Entry and exit prices are offset by `IOC_SLIPPAGE_BPS` to improve the chance of immediate fills.
+- The bot now serializes its async tick loop so a slow cycle cannot overlap with the next one.
 
-This software is for educational and engineering purposes. Cryptocurrency perpetual futures involve leverage, liquidation risk, and loss of funds. The authors are not responsible for losses. Verify behavior on testnet and with small size before relying on it.
