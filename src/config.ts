@@ -54,7 +54,6 @@ const schema = z
     DUAL_MA_SLOW: z.coerce.number().int().min(3).default(48),
     DUAL_MA_BAND_BPS: z.coerce.number().int().min(0).default(8),
     TICK_INTERVAL_MS: z.coerce.number().int().min(500).default(2000),
-    LOG_LEVEL: z.string().default("info"),
   })
   .superRefine((data, ctx) => {
     if (data.TRADING_ENABLED && !data.HL_PRIVATE_KEY) {

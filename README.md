@@ -51,7 +51,7 @@ src/
   main.ts           # Entry, signals
   bot.ts            # WS mids, tick loop, risk, execution
   config.ts         # Zod-validated env
-  logger.ts         # pino
+  logger.ts         # custom console JSON logger
   account.ts        # Clearinghouse helpers
   risk.ts           # Pre-trade limits
   execute.ts        # Order placement

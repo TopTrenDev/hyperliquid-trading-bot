@@ -3,12 +3,12 @@ import { loadConfig } from "./config.js";
 import { createLogger } from "./logger.js";
 
 const cfg = loadConfig();
-const log = createLogger(cfg.LOG_LEVEL);
+const logger = createLogger({ app: "hyperliquid-bot" });
 
-const bot = new HyperliquidBot(cfg, log);
+const bot = new HyperliquidBot(cfg, logger);
 
 async function shutdown(signal: string) {
-  log.warn({ signal }, "shutdown");
+  logger.warn({ signal }, "shutdown");
   await bot.stop();
   process.exit(0);
 }
@@ -19,6 +19,6 @@ process.on("SIGTERM", () => void shutdown("SIGTERM"));
 try {
   await bot.start();
 } catch (e) {
-  log.fatal({ err: e }, "bot_failed_to_start");
+  logger.fatal({ err: e }, "bot_failed_to_start");
   process.exit(1);
 }

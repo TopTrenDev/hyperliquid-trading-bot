@@ -12,7 +12,7 @@ import { accountValueUsd, fetchClearinghouse, parsePositionForCoin } from "./acc
 import type { AppConfig } from "./config.js";
 import { placeOrders } from "./execute.js";
 import type { Logger } from "./logger.js";
-import { applyRisk } from "./risk.js";
+import { applyRisk } from "./risk.js"; 
 import { createStrategy } from "./strategy/index.js";
 import type { StrategyContext } from "./strategy/types.js";
 
